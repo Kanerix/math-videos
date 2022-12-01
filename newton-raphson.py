@@ -1,8 +1,15 @@
 from manim import *
 import math
 
-#class NewtonRaphsonIntro(Scene):
-	#def construct(self):
+class NewtonRaphsonIntro(Scene):
+	def construct(self):
+		x_range=ValueTracker([1, 10, 1])
+		axes = always_redraw(lambda: Axes(x_range=x_range.get_value(), y_range=[0,10,1]))
+		graph=always_redraw(lambda: axes.plot(lambda x: x**2, color=BLUE))
+
+		self.play(Create(axes), Create(graph))
+
+		self.play(x_range.animate.set([1, 3, 1]))
 
 class NewtonRaphsonUsage(Scene):
 	def construct(self):
@@ -28,26 +35,43 @@ class NewtonRaphsonUsage(Scene):
 
 		self.wait()
 
-		numbers = [6.5]
+		starting_number = 6.5
 		drawing_queue = []
 
-		for i, n in enumerate(numbers):
-			graph_dot = Dot(axes.c2p(6, func(6)))
-			x_axes_dot = Dot(axes.c2p(6, 0))
+		for i in range(1):
+			graph_dot = Dot(axes.c2p(starting_number, func(starting_number)))
+			x_axes_dot = Dot(axes.c2p(starting_number, 0))
+			x_axes_label = MathTex(f"x_{i}").next_to(x_axes_dot, DOWN)
 			v_line = DashedLine(
 				graph_dot.get_bottom(),
 				x_axes_dot.get_top(),
 				color=RED
 			)
-			x_axes_label = MathTex(f"x_{i}").next_to(x_axes_dot, DOWN)
-			point_tangent = lambda x: func_deriv(6) * (x - 6) + func(6)
+
+			tangent = lambda x: (func_deriv(starting_number) * (x - starting_number) + func(starting_number))
+			graph_tangent = axes.plot(tangent, color=GREEN)
+
+			newton_raphsons = lambda x: (x - func(x) / func_deriv(x))
+			tangent_x_interceptor = Dot(
+				axes.c2p(newton_raphsons(starting_number), 0)
+			)
+			tangent_x_interceptor_label = MathTex(f"x_{i+1}").next_to(tangent_x_interceptor, DOWN)
+			brace = BraceBetweenPoints(
+				tangent_x_interceptor.get_bottom(),
+				x_axes_dot.get_center(),
+				color=YELLOW,
+			)
 
 			drawing_queue.append({
+				"x_value": newton_raphsons(starting_number),
 				"graph_dot": graph_dot,
 				"x_axes_dot": x_axes_dot,
-				"v_line": v_line,
 				"x_axes_label": x_axes_label,
-				"point_tangent": point_tangent
+				"v_line": v_line,
+				"graph_tangent": graph_tangent,
+				"tangent_x_interceptor": tangent_x_interceptor,
+				"tangent_x_interceptor_label": tangent_x_interceptor_label,
+				"brace": brace
 			})
 
 		self.play(Create(drawing_queue[0]["graph_dot"]))
@@ -59,16 +83,14 @@ class NewtonRaphsonUsage(Scene):
 
 		self.wait()
 
-		tangent = axes.plot(
-			drawing_queue[0]["point_tangent"],
-			color=GREEN
+		self.play(Create(drawing_queue[0]["graph_tangent"]))
+		self.play(
+			Create(drawing_queue[0]["tangent_x_interceptor"]),
+			Write(drawing_queue[0]["tangent_x_interceptor_label"])
 		)
-		self.play(Create(tangent))
 
 		self.wait()
 
-		self.play(axes.animate.set(x_range=[-2, 2, 0.5], y_range=[-2, 2, 0.5]))
-
+		self.play(Create(drawing_queue[0]["brace"]))
+		
 		self.wait()
-
-		self.play(Uncreate(tangent))
